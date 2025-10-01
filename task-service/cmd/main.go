@@ -29,19 +29,32 @@ func main() {
     // Setup routes
     r := mux.NewRouter()
     
+    // Log all incoming requests
+    r.Use(func(next http.Handler) http.Handler {
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+            log.Printf("📥 INCOMING REQUEST: %s %s", r.Method, r.URL.Path)
+            next.ServeHTTP(w, r)
+        })
+    })
+    
     // API routes
-    api := r.PathPrefix("/api/v1").Subrouter()
-    api.HandleFunc("/tasks", taskHandler.CreateTask).Methods("POST")
-    api.HandleFunc("/tasks/{id}", taskHandler.GetTask).Methods("GET")
-    api.HandleFunc("/tasks/{id}", taskHandler.UpdateTask).Methods("PUT")
-    api.HandleFunc("/tasks/{id}", taskHandler.DeleteTask).Methods("DELETE")
-    api.HandleFunc("/users/{user_id}/tasks", taskHandler.GetUserTasks).Methods("GET")
-    
-    // Health check
+    r.HandleFunc("/api/v1/tasks", taskHandler.CreateTask).Methods("POST")
+    r.HandleFunc("/api/v1/tasks/{id}", taskHandler.GetTask).Methods("GET")
+    r.HandleFunc("/api/v1/tasks/{id}", taskHandler.UpdateTask).Methods("PUT")
+    r.HandleFunc("/api/v1/tasks/{id}", taskHandler.DeleteTask).Methods("DELETE")
+    r.HandleFunc("/api/v1/users/{user_id}/tasks", taskHandler.GetUserTasks).Methods("GET")
     r.HandleFunc("/health", taskHandler.HealthCheck).Methods("GET")
-    
-    // Middleware
-    r.Use(loggingMiddleware)
+
+    // Log all registered routes
+    log.Println("📋 REGISTERED ROUTES:")
+    r.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
+        t, err := route.GetPathTemplate()
+        if err == nil {
+            methods, _ := route.GetMethods()
+            log.Printf("   %s %s", methods, t)
+        }
+        return nil
+    })
 
     port := os.Getenv("PORT")
     if port == "" {
@@ -50,11 +63,4 @@ func main() {
 
     log.Printf("🚀 Task Service starting on port %s", port)
     log.Fatal(http.ListenAndServe(":"+port, r))
-}
-
-func loggingMiddleware(next http.Handler) http.Handler {
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        log.Printf("Task Service: %s %s %s", r.RemoteAddr, r.Method, r.URL)
-        next.ServeHTTP(w, r)
-    })
 }
