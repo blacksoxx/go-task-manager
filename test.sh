@@ -1,70 +1,124 @@
 #!/bin/bash
 
-echo "🎯 FINAL FIX TEST - API GATEWAY ROUTING"
-echo "======================================"
+echo "🧪 Testing Notification Service"
 
-pkill -f "user-service" || true
-pkill -f "task-service" || true
-pkill -f "api-gateway" || true
-sleep 2
+# Base URL
+BASE_URL="http://localhost:8083"
+SERVICE_NAME="notification-service"
 
-echo ""
-echo "Starting all services..."
-./user-service/bin/user-service &
-USER_PID=$!
-./task-service/bin/task-service &
-TASK_PID=$!
-./api-gateway/bin/api-gateway &
-GATEWAY_PID=$!
+# Colors for output
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
 
-sleep 8
+# Function to print test results
+print_result() {
+    if [ $1 -eq 0 ]; then
+        echo -e "${GREEN}✅ $2${NC}"
+    else
+        echo -e "${RED}❌ $2${NC}"
+    fi
+}
 
-echo ""
-echo "🧪 Testing the fixed routing..."
+# Wait for service to be ready
+echo "⏳ Waiting for notification service to be ready..."
+until curl -s "$BASE_URL/health" > /dev/null; do
+    sleep 1
+done
 
-# Create a user and task first
-USER_JSON=$(curl -s -X POST http://localhost:8080/api/v1/users \
-  -H "Content-Type: application/json" \
-  -d '{"email":"final-fix@test.com","first_name":"Final","last_name":"Fix","password":"test123"}')
-USER_ID=$(echo "$USER_JSON" | grep -o '"id":"[^"]*' | cut -d'"' -f4)
-
-curl -s -X POST http://localhost:8080/api/v1/tasks \
-  -H "Content-Type: application/json" \
-  -d "{\"title\":\"Final Fix Task\",\"description\":\"Testing the fixed routing\",\"user_id\":\"$USER_ID\"}"
-
-echo ""
-echo "Testing: GET /api/v1/users/$USER_ID/tasks"
-echo "Look for 'Routing USER TASKS to Task Service' in logs above..."
-RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" http://localhost:8080/api/v1/users/$USER_ID/tasks)
-echo "Response:"
-echo "$RESPONSE" | grep -v "HTTP_STATUS"
-
-HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS" | cut -d: -f2)
-
-if [ "$HTTP_STATUS" = "200" ]; then
-    echo ""
-    echo "🎉 🎉 🎉 🎉 🎉 🎉 🎉 🎉 🎉 🎉 🎉 🎉 🎉 🎉 🎉 🎉 🎉 🎉 🎉 🎉 🎉 🎉"
-    echo "🎉 ULTIMATE VICTORY! USER TASKS ENDPOINT WORKING! 🎉"
-    echo "🎉 🎉 🎉 🎉 🎉 🎉 🎉 🎉 🎉 🎉 🎉 🎉 🎉 🎉 🎉 🎉 🎉 🎉 🎉 🎉 🎉 🎉"
-    echo ""
-    echo "🏆 MICROSERVICES ARCHITECTURE IS COMPLETELY OPERATIONAL!"
-    echo ""
-    echo "✅ ALL API GATEWAY ROUTES CONFIRMED WORKING:"
-    echo "   POST   /api/v1/users           → User Service"
-    echo "   GET    /api/v1/users/{id}      → User Service"  
-    echo "   POST   /api/v1/auth/login      → User Service"
-    echo "   POST   /api/v1/tasks           → Task Service"
-    echo "   GET    /api/v1/tasks/{id}      → Task Service"
-    echo "   PUT    /api/v1/tasks/{id}      → Task Service"
-    echo "   DELETE /api/v1/tasks/{id}      → Task Service"
-    echo "   GET    /api/v1/users/{id}/tasks → Task Service ✅ FINALLY WORKING!"
-    echo "   GET    /health                 → All Services"
+# Test 1: Health Check
+echo "📋 Test 1: Health Check"
+HEALTH_RESPONSE=$(curl -s -w "%{http_code}" "$BASE_URL/health")
+HTTP_CODE=$(echo "$HEALTH_RESPONSE" | tail -n1)
+if [ "$HTTP_CODE" -eq 200 ]; then
+    print_result 0 "Health check passed"
 else
-    echo ""
-    echo "❌ Still not working. HTTP Status: $HTTP_STATUS"
-    echo "Check the Gateway logs for routing information"
+    print_result 1 "Health check failed"
+fi
+
+# Test 2: Create Notification
+echo "📋 Test 2: Create Notification"
+CREATE_RESPONSE=$(curl -s -w "%{http_code}" \
+    -X POST "$BASE_URL/api/v1/notifications" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "user_id": "user-123",
+        "title": "Test Notification",
+        "message": "This is a test notification",
+        "type": "in_app",
+        "data": {
+            "task_id": "task-456",
+            "priority": "high"
+        }
+    }')
+
+HTTP_CODE=$(echo "$CREATE_RESPONSE" | tail -n1)
+RESPONSE_BODY=$(echo "$CREATE_RESPONSE" | head -n -1)
+
+if [ "$HTTP_CODE" -eq 201 ]; then
+    print_result 0 "Create notification passed"
+    NOTIFICATION_ID=$(echo "$RESPONSE_BODY" | grep -o '"id":"[^"]*' | cut -d'"' -f4)
+    echo "   Created notification ID: $NOTIFICATION_ID"
+else
+    print_result 1 "Create notification failed"
+    echo "   Response: $RESPONSE_BODY"
+fi
+
+# Test 3: Get Notification
+if [ ! -z "$NOTIFICATION_ID" ]; then
+    echo "📋 Test 3: Get Notification by ID"
+    GET_RESPONSE=$(curl -s -w "%{http_code}" "$BASE_URL/api/v1/notifications/$NOTIFICATION_ID")
+    HTTP_CODE=$(echo "$GET_RESPONSE" | tail -n1)
+    
+    if [ "$HTTP_CODE" -eq 200 ]; then
+        print_result 0 "Get notification passed"
+    else
+        print_result 1 "Get notification failed"
+    fi
+fi
+
+# Test 4: Get User Notifications
+echo "📋 Test 4: Get User Notifications"
+USER_NOTIFICATIONS_RESPONSE=$(curl -s -w "%{http_code}" "$BASE_URL/api/v1/users/user-123/notifications")
+HTTP_CODE=$(echo "$USER_NOTIFICATIONS_RESPONSE" | tail -n1)
+
+if [ "$HTTP_CODE" -eq 200 ]; then
+    print_result 0 "Get user notifications passed"
+else
+    print_result 1 "Get user notifications failed"
+fi
+
+# Test 5: Mark as Read
+if [ ! -z "$NOTIFICATION_ID" ]; then
+    echo "📋 Test 5: Mark Notification as Read"
+    MARK_READ_RESPONSE=$(curl -s -w "%{http_code}" -X PUT "$BASE_URL/api/v1/notifications/$NOTIFICATION_ID/read")
+    HTTP_CODE=$(echo "$MARK_READ_RESPONSE" | tail -n1)
+    
+    if [ "$HTTP_CODE" -eq 204 ]; then
+        print_result 0 "Mark as read passed"
+    else
+        print_result 1 "Mark as read failed"
+    fi
+fi
+
+# Test 6: Create Invalid Notification (Validation Test)
+echo "📋 Test 6: Create Invalid Notification (Validation)"
+INVALID_RESPONSE=$(curl -s -w "%{http_code}" \
+    -X POST "$BASE_URL/api/v1/notifications" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "user_id": "",
+        "title": "",
+        "message": "",
+        "type": "invalid_type"
+    }')
+
+HTTP_CODE=$(echo "$INVALID_RESPONSE" | tail -n1)
+if [ "$HTTP_CODE" -eq 400 ]; then
+    print_result 0 "Validation test passed"
+else
+    print_result 1 "Validation test failed"
 fi
 
 echo ""
-echo "🛑 Stopping services..."
-kill $USER_PID $TASK_PID $GATEWAY_PID 2>/dev/null
+echo "🎯 Notification Service Testing Complete!"
