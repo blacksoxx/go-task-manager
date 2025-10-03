@@ -7,6 +7,7 @@ import (
     "taskservice/internal/database"
     "taskservice/internal/handlers"
 
+    gorillaHandlers "github.com/gorilla/handlers" // Use an alias
     "github.com/gorilla/mux"
 )
 
@@ -29,6 +30,15 @@ func main() {
     // Setup routes
     r := mux.NewRouter()
     
+    // Configure CORS
+    corsMiddleware := gorillaHandlers.CORS(
+        gorillaHandlers.AllowedOrigins([]string{"http://localhost:8000"}), // Your frontend URL
+        gorillaHandlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}),
+        gorillaHandlers.AllowedHeaders([]string{"Content-Type", "Authorization", "X-Requested-With"}),
+        gorillaHandlers.AllowCredentials(),
+        gorillaHandlers.MaxAge(86400), // 24 hours
+    )
+    
     // Log all incoming requests
     r.Use(func(next http.Handler) http.Handler {
         return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -44,6 +54,11 @@ func main() {
     r.HandleFunc("/api/v1/tasks/{id}", taskHandler.DeleteTask).Methods("DELETE")
     r.HandleFunc("/api/v1/users/{user_id}/tasks", taskHandler.GetUserTasks).Methods("GET")
     r.HandleFunc("/health", taskHandler.HealthCheck).Methods("GET")
+
+    // Handle preflight OPTIONS requests for all routes
+    r.Methods("OPTIONS").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        w.WriteHeader(http.StatusOK)
+    })
 
     // Log all registered routes
     log.Println("📋 REGISTERED ROUTES:")
@@ -62,5 +77,9 @@ func main() {
     }
 
     log.Printf("🚀 Task Service starting on port %s", port)
-    log.Fatal(http.ListenAndServe(":"+port, r))
+    
+    // Apply CORS middleware to the router
+    handler := corsMiddleware(r)
+    
+    log.Fatal(http.ListenAndServe(":"+port, handler))
 }
