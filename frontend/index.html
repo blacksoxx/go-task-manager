@@ -3,66 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Task Manager - Notifications</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Task Manager</title>
+    <link rel="stylesheet" href="styles.css?v=2">
 </head>
 <body>
-    <div class="container">
+    <!-- Login/Signup Screen -->
+    <div id="authScreen" class="auth-container">
+        <div class="auth-card">
+            <h1>🚀 Task Manager</h1>
+            <p class="auth-subtitle">Manage your tasks and notifications</p>
+            
+            <div class="auth-tabs">
+                <button class="tab-button active" data-tab="login">Login</button>
+                <button class="tab-button" data-tab="signup">Sign Up</button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="loginForm" class="auth-form active">
+                <div class="form-group">
+                    <label for="loginEmail">Email:</label>
+                    <input type="email" id="loginEmail" required placeholder="Enter your email">
+                </div>
+                
+                <div class="form-group">
+                    <label for="loginPassword">Password:</label>
+                    <input type="password" id="loginPassword" required placeholder="Enter your password">
+                </div>
+                
+                <button type="submit" class="auth-button">Login</button>
+            </form>
+
+            <!-- Signup Form -->
+            <form id="signupForm" class="auth-form">
+                <div class="form-group">
+                    <label for="signupFirstName">First Name:</label>
+                    <input type="text" id="signupFirstName" required placeholder="Enter your first name">
+                </div>
+                
+                <div class="form-group">
+                    <label for="signupLastName">Last Name:</label>
+                    <input type="text" id="signupLastName" required placeholder="Enter your last name">
+                </div>
+                
+                <div class="form-group">
+                    <label for="signupEmail">Email:</label>
+                    <input type="email" id="signupEmail" required placeholder="Enter your email">
+                </div>
+                
+                <div class="form-group">
+                    <label for="signupPassword">Password:</label>
+                    <input type="password" id="signupPassword" required placeholder="Create a password">
+                </div>
+                
+                <button type="submit" class="auth-button">Sign Up</button>
+            </form>
+
+            <div id="authMessage" class="auth-message"></div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard (Hidden until login) -->
+    <div id="dashboard" class="container" style="display: none;">
         <header>
-            <h1>📨 Task Manager Notifications</h1>
-            <div class="controls">
-                <button id="refreshBtn">🔄 Refresh</button>
-                <button id="createBtn">➕ Create Notification</button>
+            <div class="header-left">
+                <h1>✅ Task Manager</h1>
+                <div class="user-info">
+                    Welcome, <span id="userName">User</span>!
+                    <button id="logoutBtn" class="logout-btn">Logout</button>
+                </div>
+            </div>
+            <div class="dashboard-tabs">
+                <button class="dashboard-tab active" data-tab="tasks">My Tasks</button>
+                <button class="dashboard-tab" data-tab="notifications">Notifications</button>
             </div>
         </header>
 
-        <!-- Create Notification Form -->
-        <div id="createForm" class="form-container" style="display: none;">
-            <h3>Create New Notification</h3>
-            <form id="notificationForm">
-                <div class="form-group">
-                    <label for="user_id">User ID:</label>
-                    <input type="text" id="user_id" required 
-                           value="123e4567-e89b-12d3-a456-426614174000">
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <!-- Tasks Tab - Only shows when tasks tab is active -->
+            <div id="tasksTab" class="tab-content active">
+                <div class="tab-header">
+                    <h2>My Tasks</h2>
+                    <button id="createTaskBtn" class="primary-btn">➕ Create Task</button>
                 </div>
-                
-                <div class="form-group">
-                    <label for="title">Title:</label>
-                    <input type="text" id="title" required 
-                           value="New Task Assignment">
-                </div>
-                
-                <div class="form-group">
-                    <label for="message">Message:</label>
-                    <textarea id="message" required>You have been assigned a new task</textarea>
-                </div>
-                
-                <div class="form-group">
-                    <label for="type">Type:</label>
-                    <select id="type" required>
-                        <option value="in_app">In-App</option>
-                        <option value="email">Email</option>
-                        <option value="push">Push</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="data">Additional Data (JSON):</label>
-                    <textarea id="data">{"task_id": "task-123", "priority": "high"}</textarea>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="submit">Create Notification</button>
-                    <button type="button" id="cancelBtn">Cancel</button>
-                </div>
-            </form>
-        </div>
 
-        <!-- Notifications List -->
-        <div class="notifications-container">
-            <h2>Recent Notifications</h2>
-            <div id="loading">Loading notifications...</div>
-            <div id="notificationsList" class="notifications-list"></div>
+                <!-- Create Task Form -->
+                <div id="createTaskForm" class="form-container" style="display: none;">
+                    <h3>Create New Task</h3>
+                    <form id="taskForm">
+                        <div class="form-group">
+                            <label for="taskTitle">Title:</label>
+                            <input type="text" id="taskTitle" required placeholder="Enter task title">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="taskDescription">Description:</label>
+                            <textarea id="taskDescription" placeholder="Enter task description"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="taskDueDate">Due Date:</label>
+                            <input type="datetime-local" id="taskDueDate">
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="primary-btn">Create Task</button>
+                            <button type="button" id="cancelTaskBtn" class="secondary-btn">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Tasks List -->
+                <div class="tasks-container">
+                    <div id="tasksLoading">Loading tasks...</div>
+                    <div id="tasksList" class="tasks-list"></div>
+                </div>
+            </div>
+
+            <!-- Notifications Tab - Only shows when notifications tab is active -->
+            <div id="notificationsTab" class="tab-content">
+                <div class="tab-header">
+                    <h2>Notifications</h2>
+                    <button id="refreshNotificationsBtn" class="secondary-btn">🔄 Refresh</button>
+                </div>
+
+                <!-- Notifications List -->
+                <div class="notifications-container">
+                    <div id="notificationsLoading">Loading notifications...</div>
+                    <div id="notificationsList" class="notifications-list"></div>
+                </div>
+            </div>
         </div>
 
         <!-- Notification Details Modal -->
