@@ -5,28 +5,60 @@ import (
 	"fmt"
 	"log"
 	"auth-service/internal/models"
-
+    "os"
+    "regexp"
+    "strings"
+    "time"
 	_ "github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
 )
 
+
 type DB struct {
-	*sql.DB
+    *sql.DB
 }
 
 func NewPostgresDB() (*DB, error) {
-	connStr := "host=localhost port=5432 user=postgres password=password dbname=taskmanager sslmode=disable"
-	db, err := sql.Open("postgres", connStr)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open database: %w", err)
-	}
+    // Get database URL from environment variable
+    connStr := os.Getenv("DATABASE_URL")
+    if connStr == "" {
+        // Fallback to localhost (for development outside Docker)
+        connStr = "host=localhost port=5432 user=postgres password=password dbname=taskmanager sslmode=disable"
+    } else {
+        // Log that we're using the environment variable (for debugging)
+        log.Printf("🔗 Using DATABASE_URL from environment: %s", maskPassword(connStr))
+    }
+    
+    db, err := sql.Open("postgres", connStr)
+    if err != nil {
+        return nil, fmt.Errorf("failed to open database: %w", err)
+    }
 
-	if err = db.Ping(); err != nil {
-		return nil, fmt.Errorf("failed to ping database: %w", err)
-	}
+    // Add connection retry logic
+    var pingErr error
+    for i := 0; i < 10; i++ {
+        pingErr = db.Ping()
+        if pingErr == nil {
+            break
+        }
+        log.Printf("⏳ Database not ready yet (attempt %d/10): %v", i+1, pingErr)
+        time.Sleep(2 * time.Second)
+    }
 
-	log.Println("✅ Auth Service: Connected to PostgreSQL successfully")
-	return &DB{db}, nil
+    if pingErr != nil {
+        return nil, fmt.Errorf("failed to ping database after retries: %w", pingErr)
+    }
+
+    log.Println("✅ Service: Connected to PostgreSQL successfully")
+    return &DB{db}, nil
+}
+
+// Helper function to mask password in logs
+func maskPassword(connStr string) string {
+    if strings.Contains(connStr, "password=") {
+        return regexp.MustCompile(`password=[^&]+`).ReplaceAllString(connStr, "password=***")
+    }
+    return connStr
 }
 
 func (db *DB) Init() error {

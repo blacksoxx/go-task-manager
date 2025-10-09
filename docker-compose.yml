@@ -1,6 +1,24 @@
 version: '3.8'
 
 services:
+  api-gateway:
+      build: ./api-gateway
+      container_name: taskmanager-api-gateway
+      ports:
+        - "8080:8080"
+      environment:
+        - USER_SERVICE_URL=http://user-service:8081
+        - AUTH_SERVICE_URL=http://auth-service:8084
+        - TASK_SERVICE_URL=http://task-service:8082
+        - NOTIFICATION_SERVICE_URL=http://notification-service:8083
+      depends_on:
+        - user-service
+        - auth-service
+        - task-service
+        - notification-service
+      networks:
+        - taskmanager-network
+      restart: unless-stopped
   postgres:
     image: postgres:15
     container_name: taskmanager-postgres
@@ -12,31 +30,87 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
     networks:
-      - task-manager-network
+      - taskmanager-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  redis:
-    image: redis:7-alpine
-    container_name: taskmanager-redis
+  user-service:
+    build: ./user-service
+    container_name: taskmanager-user-service
     ports:
-      - "6379:6379"
+      - "8081:8081"
+    environment:
+      - DATABASE_URL=postgres://postgres:password@postgres:5432/taskmanager?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
-      - task-manager-network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
+      - taskmanager-network
+    restart: unless-stopped
+
+  auth-service:
+    build: ./auth-service
+    container_name: taskmanager-auth-service
+    ports:
+      - "8084:8084"
+    environment:
+      - DATABASE_URL=postgres://postgres:password@postgres:5432/taskmanager?sslmode=disable
+    depends_on:
+      - postgres
+      - user-service
+    networks:
+      - taskmanager-network
+    restart: unless-stopped
+
+  task-service:
+    build: ./task-service
+    container_name: taskmanager-task-service
+    ports:
+      - "8082:8082"
+    environment:
+      - DATABASE_URL=postgres://postgres:password@postgres:5432/taskmanager?sslmode=disable
+    depends_on:
+      - postgres
+      - user-service
+    networks:
+      - taskmanager-network
+    restart: unless-stopped
+
+  notification-service:
+    build: ./notification-service
+    container_name: taskmanager-notification-service
+    ports:
+      - "8083:8083"
+    environment:
+      - DATABASE_URL=postgres://postgres:password@postgres:5432/taskmanager?sslmode=disable
+    depends_on:
+      - postgres
+      - user-service
+    networks:
+      - taskmanager-network
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    container_name: taskmanager-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - user-service
+      - auth-service
+      - task-service
+      - notification-service
+    networks:
+      - taskmanager-network
+    restart: unless-stopped
 
 volumes:
   postgres_data:
 
 networks:
-  task-manager-network:
+  taskmanager-network:
     driver: bridge

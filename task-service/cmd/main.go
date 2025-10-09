@@ -6,8 +6,6 @@ import (
     "os"
     "taskservice/internal/database"
     "taskservice/internal/handlers"
-
-    gorillaHandlers "github.com/gorilla/handlers" // Use an alias
     "github.com/gorilla/mux"
 )
 
@@ -30,14 +28,6 @@ func main() {
     // Setup routes
     r := mux.NewRouter()
     
-    // Configure CORS
-    corsMiddleware := gorillaHandlers.CORS(
-        gorillaHandlers.AllowedOrigins([]string{"http://localhost:8000"}), // Your frontend URL
-        gorillaHandlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}),
-        gorillaHandlers.AllowedHeaders([]string{"Content-Type", "Authorization", "X-Requested-With"}),
-        gorillaHandlers.AllowCredentials(),
-        gorillaHandlers.MaxAge(86400), // 24 hours
-    )
     
     // Log all incoming requests
     r.Use(func(next http.Handler) http.Handler {
@@ -78,8 +68,4 @@ func main() {
 
     log.Printf("🚀 Task Service starting on port %s", port)
     
-    // Apply CORS middleware to the router
-    handler := corsMiddleware(r)
-    
-    log.Fatal(http.ListenAndServe(":"+port, handler))
 }

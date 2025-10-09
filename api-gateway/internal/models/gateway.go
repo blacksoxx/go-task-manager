@@ -15,7 +15,7 @@ type HealthResponse struct {
     Status    string            `json:"status"`
     Service   string            `json:"service"`
     Timestamp string            `json:"timestamp"`
-    Services  map[string]string `json:"services,omitempty"`
+    Services  map[string]interface{} `json:"services,omitempty"`
 }
 
 type ErrorResponse struct {

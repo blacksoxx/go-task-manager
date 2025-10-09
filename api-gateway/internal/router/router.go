@@ -26,18 +26,23 @@ func (sr *ServiceRouter) RouteRequest(w http.ResponseWriter, r *http.Request) {
     path := r.URL.Path
     log.Printf("🔀 Gateway Routing: %s %s", r.Method, path)
     
-    // Route based on URL path
+    // ✅ CORRECTED ROUTING:
     switch {
-    case strings.HasPrefix(path, "/api/v1/users") && strings.HasSuffix(path, "/tasks"):
-        // This is /api/v1/users/{user_id}/tasks - route to Task Service
+    case strings.HasPrefix(path, "/api/v1/auth"):
+        log.Printf("  → Routing AUTH to Auth Service") // ✅ FIXED
+        sr.proxyRequest(w, r, "auth-service")
+    case strings.Contains(path, "/users/") && strings.Contains(path, "/tasks"):
         log.Printf("  → Routing USER TASKS to Task Service")
         sr.proxyRequest(w, r, "task-service")
-    case strings.HasPrefix(path, "/api/v1/users"), strings.HasPrefix(path, "/api/v1/auth"):
-        log.Printf("  → Routing to User Service")
+    case strings.HasPrefix(path, "/api/v1/users"):
+        log.Printf("  → Routing USERS to User Service") 
         sr.proxyRequest(w, r, "user-service")
     case strings.HasPrefix(path, "/api/v1/tasks"):
-        log.Printf("  → Routing to Task Service")
+        log.Printf("  → Routing TASKS to Task Service")
         sr.proxyRequest(w, r, "task-service")
+    case strings.HasPrefix(path, "/api/v1/notifications"):
+        log.Printf("  → Routing NOTIFICATIONS to Notification Service")
+        sr.proxyRequest(w, r, "notification-service")
     case path == "/health":
         sr.HealthCheck(w, r)
     default:
@@ -75,16 +80,35 @@ func (sr *ServiceRouter) proxyRequest(w http.ResponseWriter, r *http.Request, se
 }
 
 func (sr *ServiceRouter) HealthCheck(w http.ResponseWriter, r *http.Request) {
-    healthStatus := make(map[string]string)
+    healthStatus := make(map[string]interface{})
     
     for serviceName, service := range sr.services {
-        client := &http.Client{Timeout: 2 * time.Second}
-        resp, err := client.Get(service.URL + "/health")
-        if err != nil || resp.StatusCode != http.StatusOK {
-            healthStatus[serviceName] = "unhealthy"
+        client := &http.Client{Timeout: 3 * time.Second}
+        
+        // Try to check the health endpoint
+        healthURL := service.URL + "/health"
+        resp, err := client.Get(healthURL)
+        
+        if err != nil {
+            log.Printf("  ❌ Health check failed for %s: %v", serviceName, err)
+            healthStatus[serviceName] = map[string]string{
+                "status": "unhealthy",
+                "error":  err.Error(),
+            }
+        } else if resp.StatusCode != http.StatusOK {
+            log.Printf("  ❌ Health check failed for %s: status %d", serviceName, resp.StatusCode)
+            healthStatus[serviceName] = map[string]string{
+                "status": "unhealthy", 
+                "error":  fmt.Sprintf("Status %d", resp.StatusCode),
+            }
         } else {
-            healthStatus[serviceName] = "healthy"
+            log.Printf("  ✅ Health check passed for %s", serviceName)
+            healthStatus[serviceName] = map[string]string{
+                "status": "healthy",
+                "url":    service.URL,
+            }
         }
+        
         if resp != nil {
             resp.Body.Close()
         }

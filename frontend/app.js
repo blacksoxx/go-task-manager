@@ -6,9 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 class TaskManagerApp {
     constructor() {
-        this.authBaseUrl = 'http://localhost:8084/api/v1';
-        this.notificationBaseUrl = 'http://localhost:8083/api/v1';
-        this.taskBaseUrl = 'http://localhost:8082/api/v1';
+        this.apiGatewayUrl = 'http://localhost:8080/api/v1';
         this.currentUser = null;
         this.init();
     }
@@ -70,7 +68,7 @@ class TaskManagerApp {
         const password = document.getElementById('signupPassword').value;
 
         try {
-            const response = await fetch(`${this.authBaseUrl}/auth/signup`, {
+            const response = await fetch(`${this.apiGatewayUrl}/auth/signup`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -101,7 +99,7 @@ class TaskManagerApp {
         const password = document.getElementById('loginPassword').value;
 
         try {
-            const response = await fetch(`${this.authBaseUrl}/auth/login`, {
+            const response = await fetch(`${this.apiGatewayUrl}/auth/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -257,7 +255,7 @@ class TaskManagerApp {
         if (list) list.innerHTML = '';
 
         try {
-            const response = await fetch(`${this.taskBaseUrl}/users/${this.currentUser.id}/tasks`);
+            const response = await fetch(`${this.apiGatewayUrl}/users/${this.currentUser.id}/tasks`);
             
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -333,7 +331,7 @@ class TaskManagerApp {
         };
 
         try {
-            const response = await fetch(`${this.taskBaseUrl}/tasks`, {
+            const response = await fetch(`${this.apiGatewayUrl}/tasks`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -377,7 +375,7 @@ class TaskManagerApp {
                 }
             };
 
-            await fetch(`${this.notificationBaseUrl}/notifications`, {
+            await fetch(`${this.apiGatewayUrl}/notifications`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -415,7 +413,7 @@ class TaskManagerApp {
         if (list) list.innerHTML = '';
 
         try {
-            const response = await fetch(`${this.notificationBaseUrl}/users/${this.currentUser.id}/notifications?limit=50`);
+            const response = await fetch(`${this.apiGatewayUrl}/notifications/${this.currentUser.id}/notifications?limit=50`);
             
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -476,7 +474,7 @@ class TaskManagerApp {
 
     async showNotificationDetails(notificationId) {
         try {
-            const response = await fetch(`${this.notificationBaseUrl}/notifications/${notificationId}`);
+            const response = await fetch(`${this.apiGatewayUrl}/notifications/${notificationId}`);
             if (!response.ok) throw new Error('Notification not found');
             
             const data = await response.json();
@@ -534,7 +532,7 @@ class TaskManagerApp {
 
     async markAsRead(notificationId) {
         try {
-            const response = await fetch(`${this.notificationBaseUrl}/notifications/${notificationId}/read`, {
+            const response = await fetch(`${this.apiGatewayUrl}/notifications/${notificationId}/read`, {
                 method: 'PUT'
             });
 
@@ -555,7 +553,7 @@ class TaskManagerApp {
         }
 
         try {
-            const response = await fetch(`${this.notificationBaseUrl}/notifications/${notificationId}`, {
+            const response = await fetch(`${this.apiGatewayUrl}/notifications/${notificationId}`, {
                 method: 'DELETE'
             });
 

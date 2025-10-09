@@ -11,13 +11,19 @@ func LoadConfig() *models.GatewayConfig {
         Services: map[string]models.ServiceConfig{
             "user-service": {
                 Name: "user-service",
-                URL:  getEnv("USER_SERVICE_URL", "http://localhost:8081"),
-                Port: getEnv("USER_SERVICE_PORT", "8081"),
+                URL:  getEnv("USER_SERVICE_URL", "http://user-service:8081"), // ✅ FIXED
+            },
+            "auth-service": {
+                Name: "auth-service", 
+                URL:  getEnv("AUTH_SERVICE_URL", "http://auth-service:8084"), // ✅ FIXED
             },
             "task-service": {
-                Name: "task-service", 
-                URL:  getEnv("TASK_SERVICE_URL", "http://localhost:8082"),
-                Port: getEnv("TASK_SERVICE_PORT", "8082"),
+                Name: "task-service",
+                URL:  getEnv("TASK_SERVICE_URL", "http://task-service:8082"), // ✅ FIXED
+            },
+            "notification-service": {
+                Name: "notification-service",
+                URL:  getEnv("NOTIFICATION_SERVICE_URL", "http://notification-service:8083"), // ✅ FIXED
             },
         },
     }
