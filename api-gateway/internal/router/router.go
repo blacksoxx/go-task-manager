@@ -25,11 +25,16 @@ func NewServiceRouter(services map[string]models.ServiceConfig) *ServiceRouter {
 func (sr *ServiceRouter) RouteRequest(w http.ResponseWriter, r *http.Request) {
     path := r.URL.Path
     log.Printf("🔀 Gateway Routing: %s %s", r.Method, path)
-    
-    // ✅ CORRECTED ROUTING:
+    log.Printf("  📍 Incoming path: '%s'", path)    
     switch {
+    case strings.HasPrefix(path, "/api/v1/auth/signup"):
+        log.Printf("  → Routing SIGNUP to Auth Service") 
+        sr.proxyRequest(w, r, "auth-service")
+    case strings.HasPrefix(path, "/api/v1/auth/login"):
+        log.Printf("  → Routing LOGIN to Auth Service") 
+        sr.proxyRequest(w, r, "auth-service")
     case strings.HasPrefix(path, "/api/v1/auth"):
-        log.Printf("  → Routing AUTH to Auth Service") // ✅ FIXED
+        log.Printf("  → Routing AUTH to Auth Service") 
         sr.proxyRequest(w, r, "auth-service")
     case strings.Contains(path, "/users/") && strings.Contains(path, "/tasks"):
         log.Printf("  → Routing USER TASKS to Task Service")

@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      containers:
+      - name: api-gateway
+        image: acrtaskmanagerdev.azurecr.io/api-gateway:latest
+        ports:
+        - containerPort: 8080
+        env:
+        # JWT Configuration
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: auth-secret
+              key: jwt-secret
+        # Service URLs
+        - name: PORT
+          value: "8080"
+        - name: USER_SERVICE_URL
+          value: "http://user-service:8081"
+        - name: TASK_SERVICE_URL
+          value: "http://task-service:8082"
+        - name: AUTH_SERVICE_URL
+          value: "http://auth-service:8084"
+        - name: NOTIFICATION_SERVICE_URL
+          value: "http://notification-service:8083"
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5

@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgresql-config
+  namespace: default
+data:
+  POSTGRES_HOST: "psql-taskmanager-dev.postgres.database.azure.com"
+  POSTGRES_DB: "taskmanager"
+  POSTGRES_USER: "postgresadmin"
+  POSTGRES_PORT: "5432"
+  POSTGRES_SSL_MODE: "require"
