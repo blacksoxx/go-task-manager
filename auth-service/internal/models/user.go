@@ -2,6 +2,8 @@ package models
 
 import (
 	"time"
+	"github.com/golang-jwt/jwt/v4"
+
 )
 
 type User struct {
@@ -29,4 +31,10 @@ type SignupRequest struct {
 type AuthResponse struct {
 	User  *User  `json:"user"`
 	Token string `json:"token"`
+}
+
+type Claims struct {
+    UserID string `json:"user_id"`
+    Email  string `json:"email"`
+    jwt.StandardClaims
 }

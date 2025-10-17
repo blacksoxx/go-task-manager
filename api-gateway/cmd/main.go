@@ -6,11 +6,16 @@ import (
     "apigateway/internal/config"
     "apigateway/internal/middleware"
     "apigateway/internal/router"
+    "apigateway/internal/jwt"       
+
 )
 
 func main() {
     // Load configuration
     cfg := config.LoadConfig()
+
+    // Initialize JWT service 
+    jwtService := jwt.NewJWTService()
     
     // Create service router
     serviceRouter := router.NewServiceRouter(cfg.Services)
@@ -27,6 +32,8 @@ func main() {
     // Apply middleware
     handler := middleware.CorsMiddleware(mux)
     handler = middleware.LoggingMiddleware(handler)
+    handler = middleware.AuthMiddleware(jwtService)(handler) // ADD AUTH MIDDLEWARE
+
     
     port := cfg.Port
     log.Printf("🚀 API Gateway starting on port %s", port)
@@ -34,6 +41,6 @@ func main() {
     for name, service := range cfg.Services {
         log.Printf("   - %s: %s", name, service.URL)
     }
-    
+    log.Printf("🔐 JWT Authentication: ENABLED")
     log.Fatal(http.ListenAndServe(":"+port, handler))
 }

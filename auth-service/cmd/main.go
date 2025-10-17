@@ -31,12 +31,7 @@ func main() {
 	
 	
 	// Log all incoming requests
-	r.Use(func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			log.Printf("📥 AUTH SERVICE - INCOMING REQUEST: %s %s", r.Method, r.URL.Path)
-			next.ServeHTTP(w, r)
-		})
-	})
+	r.Use(loggingMiddleware)
 	
 	// API routes
 	r.HandleFunc("/api/v1/auth/signup", authHandler.Signup).Methods("POST", "OPTIONS")
@@ -61,4 +56,11 @@ func main() {
 
 	log.Printf("🚀 Auth Service starting on port %s", port)
 	log.Fatal(http.ListenAndServe(":"+port, r))
+}
+
+func loggingMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        log.Printf("%s %s %s", r.RemoteAddr, r.Method, r.URL)
+        next.ServeHTTP(w, r)
+    })
 }

@@ -23,3 +23,8 @@ type ErrorResponse struct {
     Message string `json:"message"`
     Code    int    `json:"code"`
 }
+
+type JWTClaims struct {
+    UserID string `json:"user_id"`
+    Email  string `json:"email"`
+}
