@@ -14,7 +14,7 @@ import (
 
 type DB struct {
     *sql.DB
-}
+}   
 
 func NewPostgresDB() (*DB, error) {
     // Get database URL from environment variable

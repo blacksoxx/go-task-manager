@@ -30,12 +30,7 @@ func main() {
     
     
     // Log all incoming requests
-    r.Use(func(next http.Handler) http.Handler {
-        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-            log.Printf("📥 INCOMING REQUEST: %s %s", r.Method, r.URL.Path)
-            next.ServeHTTP(w, r)
-        })
-    })
+    r.Use(loggingMiddleware)
     
     // API routes
     r.HandleFunc("/api/v1/tasks", taskHandler.CreateTask).Methods("POST")
@@ -67,5 +62,12 @@ func main() {
     }
 
     log.Printf("🚀 Task Service starting on port %s", port)
-    
+    log.Fatal(http.ListenAndServe(":"+port, r))
+}
+
+func loggingMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        log.Printf("%s %s %s", r.RemoteAddr, r.Method, r.URL)
+        next.ServeHTTP(w, r)
+    })
 }
