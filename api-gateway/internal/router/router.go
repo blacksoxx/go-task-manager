@@ -25,33 +25,27 @@ func NewServiceRouter(services map[string]models.ServiceConfig) *ServiceRouter {
 func (sr *ServiceRouter) RouteRequest(w http.ResponseWriter, r *http.Request) {
     path := r.URL.Path
     log.Printf("🔀 Gateway Routing: %s %s", r.Method, path)
-    log.Printf("  📍 Incoming path: '%s'", path)    
+    
+    // Remove /api/v1 prefix for service routing
+    servicePath := strings.TrimPrefix(path, "/api/v1")
+    
     switch {
-    case strings.HasPrefix(path, "/api/v1/auth/signup"):
-        log.Printf("  → Routing SIGNUP to Auth Service") 
-        sr.proxyRequest(w, r, "auth-service")
-    case strings.HasPrefix(path, "/api/v1/auth/login"):
-        log.Printf("  → Routing LOGIN to Auth Service") 
-        sr.proxyRequest(w, r, "auth-service")
-    case strings.HasPrefix(path, "/api/v1/auth"):
+    case strings.HasPrefix(servicePath, "/auth"):
         log.Printf("  → Routing AUTH to Auth Service") 
         sr.proxyRequest(w, r, "auth-service")
-    case strings.Contains(path, "/users/") && strings.Contains(path, "/tasks"):
-        log.Printf("  → Routing USER TASKS to Task Service")
-        sr.proxyRequest(w, r, "task-service")
-    case strings.HasPrefix(path, "/api/v1/users"):
+    case strings.HasPrefix(servicePath, "/users"):
         log.Printf("  → Routing USERS to User Service") 
         sr.proxyRequest(w, r, "user-service")
-    case strings.HasPrefix(path, "/api/v1/tasks"):
+    case strings.HasPrefix(servicePath, "/tasks"):
         log.Printf("  → Routing TASKS to Task Service")
         sr.proxyRequest(w, r, "task-service")
-    case strings.HasPrefix(path, "/api/v1/notifications"):
+    case strings.HasPrefix(servicePath, "/notifications"):
         log.Printf("  → Routing NOTIFICATIONS to Notification Service")
         sr.proxyRequest(w, r, "notification-service")
     case path == "/health":
         sr.HealthCheck(w, r)
     default:
-        log.Printf("  ❌ No route found - returning 404")
+        log.Printf("  ❌ No route found for path: '%s'", path)
         http.NotFound(w, r)
     }
 }

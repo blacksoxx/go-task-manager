@@ -25,15 +25,10 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 
 func CorsMiddleware(next http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        origin := r.Header.Get("Origin")
-        if strings.Contains(origin, "localhost") {
-            w.Header().Set("Access-Control-Allow-Origin", origin)
-        }
-        
+        w.Header().Set("Access-Control-Allow-Origin", "*")
         w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-        w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-        
-        // ✅ Handle preflight requests
+        w.Header().Set("Access-Control-Allow-Headers", "content-type, authorization")   
+              
         if r.Method == "OPTIONS" {
             w.WriteHeader(http.StatusOK)
             return
